@@ -46,12 +46,14 @@ services:
 # secrets:
 #   db-password:
 #     file: db/password.txt
-
     env_file:
       - .env
     depends_on:
       database:
         condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
+
   database:
     image: neo4j:5.11
     ports:
@@ -64,3 +66,23 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+
+  ollama-pull:
+    image: docker/genai:ollama-pull
+    env_file:
+      - .env
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_volume:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+volumes:
+  ollama_volume:
